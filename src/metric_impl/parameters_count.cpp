@@ -26,28 +26,21 @@ MetricResult::ValueType CountParametersMetric::CalculateImpl(const function::Fun
         return 0;
     }
 
-    // 2. Находим конец блока параметров
-    size_t balance = 1;
-    size_t params_end = params_start + parameters_marker.length();
-    while (params_end < function_ast.size() && balance > 0) {
-        if (function_ast[params_end] == '(')
-            balance++;
-        else if (function_ast[params_end] == ')')
-            balance--;
-        params_end++;
-    }
-
-    // 3. Извлекаем подстроку с параметрами
-    std::string_view params_block(function_ast.data() + params_start, params_end - params_start);
-
-    // 4. Считаем параметры (идентификаторы или pattern-ы)
+    // Каждый непосредственный дочерний узел `parameters` описывает один параметр.
+    // Вложенные identifier (например, внутри default_parameter) отдельно не считаются.
     int count = 0;
-    size_t pos = 0;
-    const std::string id_marker = "(identifier";
-
-    while ((pos = params_block.find(id_marker, pos)) != std::string_view::npos) {
-        count++;
-        pos += id_marker.length();
+    int depth = 1;
+    std::size_t position = params_start + parameters_marker.size();
+    while (position < function_ast.size() && depth > 0) {
+        if (function_ast[position] == '(') {
+            if (depth == 1) {
+                ++count;
+            }
+            ++depth;
+        } else if (function_ast[position] == ')') {
+            --depth;
+        }
+        ++position;
     }
 
     return count;

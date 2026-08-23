@@ -1,3 +1,5 @@
+#pragma once
+
 #include <unistd.h>
 
 #include <algorithm>
@@ -40,7 +42,20 @@ namespace rs = std::ranges;
  */
 auto AnalyseFunctions(const std::vector<std::string> &files,
                       const analyzer::metric::MetricExtractor &metric_extractor) {
-    return std::vector<std::pair<function::Function, metric::MetricResults>>{};
+    std::vector<std::pair<function::Function, metric::MetricResults>> analysis;
+    function::FunctionExtractor function_extractor;
+
+    for (const auto &filename : files) {
+        file::File file(filename);
+        auto functions = function_extractor.Get(file);
+
+        for (auto &function : functions) {
+            auto metrics = metric_extractor.Get(function);
+            analysis.emplace_back(std::move(function), std::move(metrics));
+        }
+    }
+
+    return analysis;
 }
 
 /**
@@ -89,7 +104,9 @@ auto SplitByFiles(const auto &analysis) {
  */
 void AccumulateFunctionAnalysis(const auto &analysis,
                                 const analyzer::metric_accumulator::MetricsAccumulator &accumulator) {
-    // здесь ваш код
+    for (const auto &element : analysis) {
+        accumulator.AccumulateNextFunctionResults(element.second);
+    }
 }
 
 }  // namespace analyzer
