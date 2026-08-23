@@ -40,11 +40,11 @@ namespace rs = std::ranges;
  */
 auto AnalyseFunctions(const std::vector<std::string> &files,
                       const analyzer::metric::MetricExtractor &metric_extractor) {
-    // здесь ваш код
+    return std::vector<std::pair<function::Function, metric::MetricResults>>{};
 }
 
 /**
- * 
+ *
  * @brief Группирует результаты анализа по классам.
  *
  * Эта функция:
@@ -62,7 +62,8 @@ auto AnalyseFunctions(const std::vector<std::string> &files,
  * действительно исчезают из результата.
  */
 auto SplitByClasses(const auto &analysis) {
-    // здесь ваш код
+    return analysis | rv::filter([](const auto &elem) { return elem.first.class_name.has_value(); }) |
+           rv::chunk_by([](const auto &lhs, const auto &rhs) { return lhs.first.class_name == rhs.first.class_name; });
 }
 
 /**
@@ -74,7 +75,8 @@ auto SplitByClasses(const auto &analysis) {
  * - Использует `chunk_by`, поэтому **порядок функций в `analysis` должен быть по файлам**.
  */
 auto SplitByFiles(const auto &analysis) {
-    // здесь ваш код
+    return analysis |
+           rv::chunk_by([](const auto &lhs, const auto &rhs) { return lhs.first.filename == rhs.first.filename; });
 }
 
 /**

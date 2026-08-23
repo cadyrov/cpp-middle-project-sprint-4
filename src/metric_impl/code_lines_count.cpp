@@ -1,5 +1,6 @@
 #include "metric_impl/code_lines_count.hpp"
 
+#include "utils.hpp"
 #include <unistd.h>
 
 #include <algorithm>
@@ -36,7 +37,7 @@ MetricResult::ValueType CodeLinesCountMetric::CalculateImpl(const function::Func
     // - конечная строка ищется по шаблону "] -"
     const int start_line = line_number(0);
     const int end_line = line_number(function_ast.find("] -"));
-    
+
     // Лямбда, проверяющая, является ли конкретная строка "кодовой", то есть не комментарием.
     auto is_code_line = [&](int line) {
         std::string line_marker = "[" + std::to_string(line) + ",";
@@ -62,7 +63,8 @@ MetricResult::ValueType CodeLinesCountMetric::CalculateImpl(const function::Func
     //
     // Почему start_line + 1?
     // Потому что первая строка — это строка с объявлением функции (def ...),
-    // а тело функции начинается со следующей строки (обычно с отступа).                                             std::views::filter([&](int line) { return is_code_line(line); })));
+    // а тело функции начинается со следующей строки (обычно с отступа). std::views::filter([&](int line) { return
+    // is_code_line(line); })));
 }
 
 }  // namespace analyzer::metric::metric_impl
