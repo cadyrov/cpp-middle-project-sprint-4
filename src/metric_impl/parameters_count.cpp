@@ -30,18 +30,19 @@ MetricResult::ValueType CountParametersMetric::CalculateImpl(const function::Fun
     // Вложенные identifier (например, внутри default_parameter) отдельно не считаются.
     int count = 0;
     int depth = 1;
-    std::size_t position = params_start + parameters_marker.size();
-    while (position < function_ast.size() && depth > 0) {
-        if (function_ast[position] == '(') {
+    const std::string_view parameters_body(function_ast.data() + params_start + parameters_marker.size(),
+                                           function_ast.size() - params_start - parameters_marker.size());
+    [[maybe_unused]] const auto parameters_end = std::ranges::find_if(parameters_body, [&](char symbol) {
+        if (symbol == '(') {
             if (depth == 1) {
                 ++count;
             }
             ++depth;
-        } else if (function_ast[position] == ')') {
+        } else if (symbol == ')') {
             --depth;
         }
-        ++position;
-    }
+        return depth == 0;
+    });
 
     return count;
 }

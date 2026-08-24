@@ -45,15 +45,15 @@ auto AnalyseFunctions(const std::vector<std::string> &files,
     std::vector<std::pair<function::Function, metric::MetricResults>> analysis;
     function::FunctionExtractor function_extractor;
 
-    for (const auto &filename : files) {
-        file::File file(filename);
-        auto functions = function_extractor.Get(file);
+    rs::for_each(files, [&](const auto &filename) {
+        const file::File analyzed_file(filename);
+        auto functions = function_extractor.Get(analyzed_file);
 
-        for (auto &function : functions) {
+        rs::for_each(functions, [&](auto &function) {
             auto metrics = metric_extractor.Get(function);
             analysis.emplace_back(std::move(function), std::move(metrics));
-        }
-    }
+        });
+    });
 
     return analysis;
 }
@@ -104,9 +104,9 @@ auto SplitByFiles(const auto &analysis) {
  */
 void AccumulateFunctionAnalysis(const auto &analysis,
                                 const analyzer::metric_accumulator::MetricsAccumulator &accumulator) {
-    for (const auto &element : analysis) {
+    rs::for_each(analysis, [&](const auto &element) {
         accumulator.AccumulateNextFunctionResults(element.second);
-    }
+    });
 }
 
 }  // namespace analyzer

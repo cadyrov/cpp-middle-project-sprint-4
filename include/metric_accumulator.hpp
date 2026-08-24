@@ -13,7 +13,10 @@
 #include <iostream>
 #include <ranges>
 #include <sstream>
+#include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -37,13 +40,28 @@ protected:
 struct MetricsAccumulator {
     template <typename Accumulator>
     void RegisterAccumulator(const std::string &metric_name, std::unique_ptr<Accumulator> acc) {
+        if (!acc) {
+            throw std::runtime_error("Cannot register null accumulator for metric '" + metric_name + "'");
+        }
+        if (accumulators.contains(metric_name)) {
+            throw std::runtime_error("Accumulator for metric '" + metric_name + "' is already registered");
+        }
         accumulators.emplace(metric_name, std::move(acc));
     }
     template <typename Accumulator>
     const Accumulator &GetFinalizedAccumulator(const std::string &metric_name) const {
-        auto metric_accululator = accumulators.at(metric_name);
-        metric_accululator->Finalize();
-        return dynamic_cast<const Accumulator&>(*metric_accululator);
+        const auto position = accumulators.find(metric_name);
+        if (position == accumulators.end()) {
+            throw std::runtime_error("Accumulator for metric '" + metric_name + "' is not registered");
+        }
+
+        const auto *accumulator = dynamic_cast<const Accumulator *>(position->second.get());
+        if (!accumulator) {
+            throw std::runtime_error("Accumulator for metric '" + metric_name + "' has an unexpected type");
+        }
+
+        position->second->Finalize();
+        return *accumulator;
     }
     void AccumulateNextFunctionResults(const std::vector<metric::MetricResult> &metric_results) const;
 

@@ -61,25 +61,24 @@ MetricResult::ValueType CodeLinesCountMetric::CalculateImpl(const function::Func
     // Лямбда, проверяющая, является ли конкретная строка "кодовой", то есть не комментарием.
     auto is_code_line = [&](int line) {
         const std::string line_marker = "[" + std::to_string(line) + ",";
-        std::size_t line_pos = 0;
-
-        while ((line_pos = function_ast.find(line_marker, line_pos)) != std::string::npos) {
-            const std::size_t node_start = function_ast.rfind('(', line_pos);
-            if (node_start != std::string::npos) {
-                const std::size_t node_end = function_ast.find_first_of(" \n[", node_start + 1);
-                if (node_end == std::string::npos) {
-                    return false;
-                }
-                const std::string_view node_type(function_ast.data() + node_start + 1,
-                                                 node_end - node_start - 1);
-                if (node_type != "comment") {
-                    return true;
-                }
-            }
-            line_pos += line_marker.size();
+        const std::size_t line_pos = function_ast.find(line_marker);
+        if (line_pos == std::string::npos) {
+            return false;
         }
 
-        return false;
+        const std::size_t node_start = function_ast.rfind('(', line_pos);
+        if (node_start == std::string::npos) {
+            return false;
+        }
+
+        const std::size_t node_end = function_ast.find_first_of(" \n[", node_start + 1);
+        if (node_end == std::string::npos) {
+            return false;
+        }
+
+        const std::string_view node_type(function_ast.data() + node_start + 1,
+                                         node_end - node_start - 1);
+        return node_type != "comment";
     };
     // === ВАШ КОД ДОЛЖЕН БЫТЬ ЗДЕСЬ ===
     //
@@ -89,11 +88,8 @@ MetricResult::ValueType CodeLinesCountMetric::CalculateImpl(const function::Func
     // Почему start_line + 1?
     // Потому что первая строка — это строка с объявлением функции (def ...),
     // а тело функции начинается со следующей строки (обычно с отступа).
-    int count = 0;
-    for (int line = *start_line + 1; line <= *end_line; ++line) {
-        count += is_code_line(line);
-    }
-    return count;
+    auto code_lines = rv::iota(*start_line + 1, *end_line + 1) | rv::filter(is_code_line);
+    return static_cast<int>(rs::distance(code_lines));
 }
 
 }  // namespace analyzer::metric::metric_impl

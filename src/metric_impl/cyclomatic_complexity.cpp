@@ -63,14 +63,10 @@ MetricResult::ValueType CyclomaticComplexityMetric::CalculateImpl(const function
     // то найдено 3 узла → сложность = 3 + 1 = 4.
     //
     int complexity = 1;
-    for (const std::string_view node_type : complexity_nodes) {
+    std::ranges::for_each(complexity_nodes, [&](const std::string_view node_type) {
         const std::string marker = "(" + std::string(node_type);
-        std::size_t position = 0;
-        while ((position = function_ast.find(marker, position)) != std::string::npos) {
-            ++complexity;
-            position += marker.size();
-        }
-    }
+        complexity += static_cast<int>(std::ranges::distance(function_ast | std::views::split(marker)) - 1);
+    });
     return complexity;
 }
 }  // namespace analyzer::metric::metric_impl
