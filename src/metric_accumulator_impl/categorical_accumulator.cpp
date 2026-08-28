@@ -20,7 +20,15 @@
 namespace analyzer::metric_accumulator::metric_accumulator_impl {
 
 void CategoricalAccumulator::Accumulate(const metric::MetricResult &metric_result) {
-    categories_freq[std::get<std::string>(metric_result.value)]++;
+    if (is_finalized) {
+        throw std::runtime_error("CategoricalAccumulator cannot accumulate after Finalize(); call Reset() first");
+    }
+    const auto *value = std::get_if<std::string>(&metric_result.value);
+    if (!value) {
+        throw std::runtime_error("CategoricalAccumulator expected a string value for metric '" +
+                                 metric_result.metric_name + "'");
+    }
+    ++categories_freq[*value];
 }
 
 void CategoricalAccumulator::Finalize() { is_finalized = true; }

@@ -32,15 +32,18 @@ MetricResult::ValueType CyclomaticComplexityMetric::CalculateImpl(const function
     // - case в match-выражениях
     // - assert
     // - тернарный оператор (conditional_expression)
-    constexpr std::array<std::string_view, 9> complexity_nodes = {
+    constexpr std::array<std::string_view, 12> complexity_nodes = {
         "if_statement",            // if
-        "elif_statement",          // elif
+        "elif_clause",             // elif
+        "else_clause",             // else
         "for_statement",           // for
         "while_statement",         // while
         "try_statement",           // try
+        "except_clause",           // except / catch
         "finally_clause",          // finally
+        "match_statement",         // match
         "case_clause",             // case
-        "assert",                  // assert
+        "assert_statement",        // assert
         "conditional_expression",  // для тернарного оператора
     };
 
@@ -59,11 +62,11 @@ MetricResult::ValueType CyclomaticComplexityMetric::CalculateImpl(const function
     // Если AST содержит "(if_statement ...) (for_statement ...) (if_statement ...)",
     // то найдено 3 узла → сложность = 3 + 1 = 4.
     //
-    // Подсказка:
-    // Можно пройтись по каждому `node_type` из `complexity_nodes` и подсчитать,
-    // сколько раз он встречается в `function_ast`, используя `std::string::find`
-    // в цикле (это допустимо, так как вы работаете со строковым представлением AST,
-    // а не с исходным кодом напрямую).
-
+    int complexity = 1;
+    std::ranges::for_each(complexity_nodes, [&](const std::string_view node_type) {
+        const std::string marker = "(" + std::string(node_type);
+        complexity += static_cast<int>(std::ranges::distance(function_ast | std::views::split(marker)) - 1);
+    });
+    return complexity;
 }
 }  // namespace analyzer::metric::metric_impl
