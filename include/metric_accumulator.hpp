@@ -60,7 +60,8 @@ struct MetricsAccumulator {
             throw std::runtime_error("Accumulator for metric '" + metric_name + "' has an unexpected type");
         }
 
-        position->second->Finalize();
+        accumulator->Finalize();
+
         return *accumulator;
     }
     void AccumulateNextFunctionResults(const std::vector<metric::MetricResult> &metric_results) const;

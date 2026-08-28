@@ -4,12 +4,11 @@
 
 #include <cmath>
 
-namespace analyzer::metric_accumulator::metric_accumulator_impl::test {
-namespace {
+namespace analyzer::metric_accumulator::metric_accumulator_impl::test { namespace {
 
-metric::MetricResult IntegerResult(int value) {
-    return {.metric_name = "Integer metric", .value = value};
-}
+constexpr double kEpsilon = 1e-6;
+
+metric::MetricResult IntegerResult(int value) { return {.metric_name = "Integer metric", .value = value}; }
 
 TEST(SumAverageAccumulatorTest, CalculatesSumAndAverage) {
     SumAverageAccumulator accumulator;
@@ -17,7 +16,8 @@ TEST(SumAverageAccumulatorTest, CalculatesSumAndAverage) {
     accumulator.Accumulate(IntegerResult(4));
     accumulator.Finalize();
 
-    EXPECT_EQ(accumulator.Get(), (SumAverageAccumulator::SumAverage{.sum = 6, .average = 3.0}));
+    EXPECT_NEAR(accumulator.Get().sum, 6, kEpsilon);
+    EXPECT_NEAR(accumulator.Get().average, 3.0, kEpsilon);
 }
 
 TEST(SumAverageAccumulatorTest, ResetClearsState) {
@@ -29,7 +29,8 @@ TEST(SumAverageAccumulatorTest, ResetClearsState) {
     EXPECT_THROW(accumulator.Get(), std::runtime_error);
     accumulator.Accumulate(IntegerResult(10));
     accumulator.Finalize();
-    EXPECT_EQ(accumulator.Get(), (SumAverageAccumulator::SumAverage{.sum = 10, .average = 10.0}));
+    EXPECT_NEAR(accumulator.Get().sum, 10, kEpsilon);
+    EXPECT_NEAR(accumulator.Get().average, 10.0, kEpsilon);
 }
 
 TEST(SumAverageAccumulatorTest, ReportsInvalidStateAndValueType) {
@@ -43,6 +44,4 @@ TEST(SumAverageAccumulatorTest, ReportsInvalidStateAndValueType) {
     EXPECT_THROW(accumulator.Accumulate(IntegerResult(2)), std::runtime_error);
 }
 
-}  // namespace
-
-}  // namespace analyzer::metric_accumulator::metric_accumulator_impl::test
+}}  // namespace analyzer::metric_accumulator::metric_accumulator_impl::test

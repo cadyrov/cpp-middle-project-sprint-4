@@ -42,18 +42,20 @@ namespace rs = std::ranges;
  */
 auto AnalyseFunctions(const std::vector<std::string> &files,
                       const analyzer::metric::MetricExtractor &metric_extractor) {
-    std::vector<std::pair<function::Function, metric::MetricResults>> analysis;
     function::FunctionExtractor function_extractor;
 
-    rs::for_each(files, [&](const auto &filename) {
-        const file::File analyzed_file(filename);
-        auto functions = function_extractor.Get(analyzed_file);
+    auto analysis = files | rv::transform([&](const auto &filename) {
+                        const file::File analyzed_file(filename);
+                        auto functions = function_extractor.Get(analyzed_file);
 
-        rs::for_each(functions, [&](auto &function) {
-            auto metrics = metric_extractor.Get(function);
-            analysis.emplace_back(std::move(function), std::move(metrics));
-        });
-    });
+                        return functions | rv::transform([&](auto &function) {
+                                   auto metrics = metric_extractor.Get(function);
+                                   return std::pair<function::Function, metric::MetricResults>{std::move(function),
+                                                                                               std::move(metrics)};
+                               }) |
+                               rs::to<std::vector>();
+                    }) |
+                    rv::join | rs::to<std::vector>();
 
     return analysis;
 }
@@ -104,9 +106,7 @@ auto SplitByFiles(const auto &analysis) {
  */
 void AccumulateFunctionAnalysis(const auto &analysis,
                                 const analyzer::metric_accumulator::MetricsAccumulator &accumulator) {
-    rs::for_each(analysis, [&](const auto &element) {
-        accumulator.AccumulateNextFunctionResults(element.second);
-    });
+    rs::for_each(analysis, [&](const auto &element) { accumulator.AccumulateNextFunctionResults(element.second); });
 }
 
 }  // namespace analyzer
